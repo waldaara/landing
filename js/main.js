@@ -1,136 +1,118 @@
+const databaseURL =
+  "https://landing-c6440-default-rtdb.firebaseio.com/data.json";
 
-const databaseURL = "https://landing-c6440-default-rtdb.firebaseio.com/data.json";
+const sendData = () => {
+  const form = document.getElementById("form");
 
-let sendData = () => {
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData.entries());
 
-    const form = document.getElementById('form');
+  data["saved"] = new Date().toLocaleString("es-CO", {
+    timeZone: "America/Guayaquil",
+  });
 
-    // Obtén los datos del formulario
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries()); // Convierte FormData a objeto
-
-    data['saved'] = new Date().toLocaleString('es-CO', { timeZone: 'America/Guayaquil' })
-
-    // Realiza la petición POST con fetch
-    fetch(databaseURL, {
-        method: 'POST', // Método de la solicitud
-        headers: {
-            'Content-Type': 'application/json' // Especifica que los datos están en formato JSON
-        },
-        body: JSON.stringify(data) // Convierte los datos a JSON
+  fetch(databaseURL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Error en la solicitud: ${response.statusText}`);
+      }
+      return response.json();
     })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Error en la solicitud: ${response.statusText}`);
-            }
-            return response.json(); // Procesa la respuesta como JSON
-        })
-        .then(result => {
-            alert('Agradeciendo tu preferencia, nos mantenemos actualizados y enfocados en atenderte como mereces'); // Maneja la respuesta con un mensaje
-            form.reset()
-        })
-        .catch(error => {
-            alert('Hemos experimentado un error. ¡Vuelve pronto!'); // Maneja el error con un mensaje
-        });
-}
+    .then(() => {
+      alert(
+        "Agradeciendo tu preferencia, nos mantenemos actualizados y enfocados en atenderte como mereces"
+      );
+
+      form.reset();
+    })
+    .catch(() => {
+      alert("Hemos experimentado un error. ¡Vuelve pronto!");
+    });
+};
 
 const getData = async () => {
-    try {
+  try {
+    const response = await fetch(databaseURL);
 
-        // Realiza la petición fetch a la URL de la base de datos
-        const response = await fetch(databaseURL);
+    if (!response.ok) {
+      alert("Hemos experimentado un error. ¡Vuelve pronto!");
+    }
 
-        // Verifica si la respuesta es exitosa
-        if (!response.ok) {
-            alert('Hemos experimentado un error. ¡Vuelve pronto!'); // Maneja el error con un mensaje
-        }
+    const data = await response.json();
 
-        // Convierte la respuesta en formato JSON
-        const data = await response.json();
+    if (!data) return;
 
-        if (data != null) {
+    const subscribersCount = new Map();
 
-            // Cuente el número de suscriptores registrados por fecha a partir del objeto data
-            let countSuscribers = new Map()
+    if (Object.keys(data).length > 0) {
+      for (let key in data) {
+        const { email, saved } = data[key];
 
-            if (Object.keys(data).length > 0) {
-                for (let key in data) {
+        const date = saved.split(",")[0];
 
-                    let { email, saved } = data[key]
+        const count = subscribersCount.get(date) || 0;
+        subscribersCount.set(date, count + 1);
+      }
+    }
 
-                    let date = saved.split(",")[0]
+    const subscribers = document.getElementById("subscribers-data");
 
-                    let count = countSuscribers.get(date) || 0;
-                    countSuscribers.set(date, count + 1)
-                }
-            }
-            // END
+    if (subscribersCount.size > 0) {
+      subscribers.innerHTML = "";
 
-            // Genere y agregue filas de una tabla HTML para mostrar fechas y cantidades de suscriptores almacenadas
-            if (countSuscribers.size > 0) {
-
-                subscribers.innerHTML = ''
-
-                for (let [date, count] of countSuscribers) {
-                    let rowTemplate = `
+      subscribersCount.forEach((count, date) => {
+        const rowTemplate = `
                     <tr>
-                        <th scope="row">1</th>
                         <td>${date}</td>
                         <td>${count}</td>
-                    </tr>`
-                    subscribers.innerHTML += rowTemplate
-                }
-            }
-            // END
+                    </tr>`;
 
-        }
-
-    } catch (error) {
-        // Muestra cualquier error que ocurra durante la petición
-        alert('Hemos experimentado un error. ¡Vuelve pronto!'); // Maneja el error con un mensaje
+        subscribers.innerHTML += rowTemplate;
+      });
     }
-}
+  } catch (error) {
+    console.log(error);
+    alert("Hemos experimentado un error. ¡Vuelve pronto!");
+  }
+};
 
-let ready = () => {
-    console.log('DOM está listo')
+const loaded = () => {
+  const myform = document.getElementById("form");
 
-    // Recuperación de datos
-    getData();
-}
+  myform.addEventListener("submit", (eventSubmit) => {
+    eventSubmit.preventDefault();
 
-let loaded = () => {
-    console.log('Iframes e Images cargadas')
+    const emailElement = document.querySelector(".form-control-lg");
+    const emailText = emailElement.value;
 
-    let myform = document.getElementById('form');
-
-    myform.addEventListener('submit', (eventSubmit) => {
-        eventSubmit.preventDefault();
-
-        const emailElement = document.querySelector('.form-control-lg');
-        const emailText = emailElement.value;
-
-        if (emailText.length === 0) {
-            emailElement.animate(
-                [
-                    { transform: "translateX(0)" },
-                    { transform: "translateX(50px)" },
-                    { transform: "translateX(-50px)" },
-                    { transform: "translateX(0)" }
-                ],
-                {
-                    duration: 400,
-                    easing: "linear",
-                }
-            )
-            emailElement.focus()
-
-            return;
+    if (emailText.length === 0) {
+      emailElement.animate(
+        [
+          { transform: "translateX(0)" },
+          { transform: "translateX(50px)" },
+          { transform: "translateX(-50px)" },
+          { transform: "translateX(0)" },
+        ],
+        {
+          duration: 400,
+          easing: "linear",
         }
+      );
 
-        sendData();
+      emailElement.focus();
 
-    })
-}
+      return;
+    }
 
-window.addEventListener("DOMContentLoaded", ready);
-window.addEventListener("load", loaded)
+    sendData();
+  });
+};
+
+window.addEventListener("DOMContentLoaded", () => getData());
+window.addEventListener("load", loaded);
